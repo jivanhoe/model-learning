@@ -37,6 +37,6 @@ class PushDataset(Dataset):
 
         push = np.array(push)
 
-        sample = {'obj1': obj1, 'obj2': obj2, 'push': push}
-        return sample 
+        #sample = {'obj1': obj1, 'obj2': obj2, 'push': push}
+        return obj1, obj2, push
 
