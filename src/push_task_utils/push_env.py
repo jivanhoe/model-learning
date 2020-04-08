@@ -124,6 +124,26 @@ class PushEnv(object):
                                  interpolation=cv2.INTER_CUBIC)
         return resized_img
 
+    def calculate_push_locations(self, state, push_ang, push_len):
+        obj_x, obj_y = state
+        start_x = obj_x - self.push_len_min * np.cos(push_ang)
+        start_y = obj_y - self.push_len_min * np.sin(push_ang)
+        end_x = obj_x + push_len * np.cos(push_ang)
+        end_y = obj_y + push_len * np.sin(push_ang)
+        return start_x, start_y, end_x, end_y
+
+    def push_is_feasible(self, start_x, start_y, end_x, end_y):
+        start_radius = np.sqrt(start_x ** 2 + start_y ** 2)
+        end_radius = np.sqrt(end_x ** 2 + end_y ** 2)
+        return (
+                start_radius < self.max_arm_reach
+                and end_radius + self.push_len_min < self.max_arm_reach
+                and end_x > self.workspace_min_x
+                and end_x < self.workspace_max_x
+                and end_y > self.workspace_min_y
+                and end_y < self.workspace_max_y
+        )
+
     def sample_push(self, obj_x, obj_y, push_ang=None, push_len=None):
         while True:
             # choose push angle along the z axis
@@ -133,18 +153,10 @@ class PushEnv(object):
             if push_len is None:
                 push_len = np.random.random() * self.push_len_range + self.push_len_min
             # calc starting push location and ending push loaction
-            start_x = obj_x - self.push_len_min * np.cos(push_ang)
-            start_y = obj_y - self.push_len_min * np.sin(push_ang)
-            end_x = obj_x + push_len * np.cos(push_ang)
-            end_y = obj_y + push_len * np.sin(push_ang)
-            start_radius = np.sqrt(start_x ** 2 + start_y ** 2)
-            end_radius = np.sqrt(end_x ** 2 + end_y ** 2)
+            start_x, start_y, end_x, end_y = self.calculate_push_locations((obj_x, obj_y), push_ang, push_len)
+
             # find valid push that does not lock the arm
-            if start_radius < self.max_arm_reach \
-                    and end_radius + self.push_len_min < self.max_arm_reach \
-                    and end_x > self.workspace_min_x and end_x < self.workspace_max_x \
-                    and end_y > self.workspace_min_y and end_y < self.workspace_max_y:
-                # find push that does not push obj out of workspace (camera view)
+            if self.push_is_feasible(start_x, start_y, end_x, end_y):
                 break
         return start_x, start_y, end_x, end_y
 
