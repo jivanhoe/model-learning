@@ -52,7 +52,7 @@ if __name__ == "__main__":
             train_data=train_data,
             learning_rate=LEARNING_RATE,
             num_epochs=NUM_EPOCHS,
-            model_path=f"{RESULTS_PATH}/{model_name}_params",
+            model_path=f"{RESULTS_PATH}/{model_name}_model_params",
             training_loss_path=f"{RESULTS_PATH}/{model_name}_training_loss"
         )
         log_metrics(
