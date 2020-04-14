@@ -3,7 +3,7 @@ import logging
 from torch.utils.data import DataLoader
 
 from experiments.metrics import log_metrics
-from experiments.training import train
+from models.training import train
 from models.inverse_model import InverseModel
 from models.forward_model import ForwardModel
 from push_task_utils.data_processing import PushDataset
@@ -52,8 +52,8 @@ if __name__ == "__main__":
             train_data=train_data,
             learning_rate=LEARNING_RATE,
             num_epochs=NUM_EPOCHS,
-            model_path=f"{RESULTS_PATH}/{model_name}_model_params",
-            training_loss_path=f"{RESULTS_PATH}/{model_name}_training_loss"
+            model_path=f"{RESULTS_PATH}/{model_name}/model_params",
+            training_loss_path=f"{RESULTS_PATH}/{model_name}/training_loss"
         )
         log_metrics(
             model=model,

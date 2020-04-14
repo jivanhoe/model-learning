@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from models.forward_model import ForwardModel
 from models.inverse_model import InverseModel
-from experiments.training import DEVICE
+from models.training import DEVICE
 
 logger = logging.getLogger(__name__)
 

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from models.forward_model import ForwardModel
-from push_task_utils.push_sampler import PushSampler
+from push_task_utils.sampler import PushSampler
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class CrossEntropyPlanner:
             state: torch.Tensor,
             goal_state: torch.Tensor
     ) -> float:
-        predicted_state = self.forward_model(state, action)
+        predicted_state = self.forward_model(state.unsqueeze(0), action.unsqueeze(0)).detach()
         return torch.norm(predicted_state - goal_state, 2).item() ** 2
 
     def update_sampler_params(

@@ -136,12 +136,10 @@ class PushEnv(object):
         start_radius = np.sqrt(start_x ** 2 + start_y ** 2)
         end_radius = np.sqrt(end_x ** 2 + end_y ** 2)
         return (
-                start_radius < self.max_arm_reach
-                and end_radius + self.push_len_min < self.max_arm_reach
-                and end_x > self.workspace_min_x
-                and end_x < self.workspace_max_x
-                and end_y > self.workspace_min_y
-                and end_y < self.workspace_max_y
+            (start_radius < self.max_arm_reach)
+            and (end_radius + self.push_len_min < self.max_arm_reach)
+            and (self.workspace_min_x < end_x < self.workspace_max_x)
+            and (self.workspace_min_y < end_y < self.workspace_max_y)
         )
 
     def sample_push(self, obj_x, obj_y, push_ang=None, push_len=None):
@@ -175,28 +173,7 @@ class PushEnv(object):
         final_obj = self.get_box_pose()[0][:2]
         return init_obj, final_obj
 
-    def plan_inverse_model(self, seed=0):
-        self.go_home()
-        self.reset_box()
-        np.random.seed(seed)
-        start_x, start_y, end_x, end_y = self.sample_push(self.box_pos[0], self.box_pos[1])
-        init_obj, goal_obj = self.execute_push(start_x=start_x, start_y=start_y, end_x=end_x, end_y=end_y)
-
-        ### Write code for visualization ###
-        init_obj = torch.FloatTensor(init_obj).unsqueeze(0)
-        goal_obj = torch.FloatTensor(goal_obj).unsqueeze(0)
-        # Get push from your model. Your model can have a method like "push = self.model.infer(init_obj, goal_obj)"        
-        push = push[0].detach().numpy()
-        start_x, start_y, end_x, end_y = push
-        self.reset_box()
-        self.execute_push(start_x=start_x, start_y=start_y, end_x=end_x, end_y=end_y)
-        final_obj = self.get_box_pose()[0][:2]
-        goal_obj = goal_obj.numpy().flatten()
-        loss = np.linalg.norm(final_obj - goal_obj)
-        print(f"L2 Distance between final obj position and goal obj position is {loss}")
-        return loss
-
-    def plan_inverse_model_extrapolate(self, seed=0):
+    def sample_multi_step_push(self, n_steps=2, seed=0):
         self.go_home()
         self.reset_box()
         np.random.seed(seed)
@@ -206,20 +183,13 @@ class PushEnv(object):
         if np.random.random() < 0.5:
             push_ang -= np.pi
 
-        for _ in range(2):
+        goal_obj = None
+        pushes = []
+        for _ in range(n_steps):
             obj_x, obj_y = self.get_box_pose()[0][:2]
             start_x, start_y, end_x, end_y = self.sample_push(obj_x=obj_x, obj_y=obj_y, push_len=0.1, push_ang=push_ang)
+            pushes.append(np.array([start_x, start_y, end_x, end_y]))
             _, goal_obj = self.execute_push(start_x=start_x, start_y=start_y, end_x=end_x, end_y=end_y)
 
-        ### Write code for visualization ###
         self.reset_box()
-        goal_obj = torch.FloatTensor(goal_obj).unsqueeze(0)
-
-        # Get push from your model. Your model can have a method like "push = self.model.infer(init_obj, goal_obj)"
-        # Your code should ideally call this twice: once at the start and once when you get intermediate state.
-
-        final_obj = self.get_box_pose()[0][:2]
-        goal_obj = goal_obj.numpy().flatten()
-        loss = np.linalg.norm(final_obj - goal_obj)
-        print(f"L2 Distance between final obj position and goal obj position is {loss}")
-        return loss
+        return np.array(init_obj), np.array(goal_obj), pushes
